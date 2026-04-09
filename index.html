@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Formatter — Edge Policy &amp; Android Managed App Config</title>
+  <link rel="stylesheet" href="style.css?v=2026-04-09" />
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        URL Formatter
+      </div>
+      <span class="header-sub">Edge URL List + Android Enterprise Managed App Configuration helper</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ── INPUT ── -->
+    <section class="card" id="input-card">
+      <div class="card-header">
+        <h2>Input URLs</h2>
+        <div class="input-actions">
+          <button type="button" class="btn btn-ghost btn-sm icon-btn" id="input-search-toggle" title="Hide / show input search" aria-expanded="true" aria-controls="input-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <label class="btn btn-ghost" for="file-upload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload File
+          </label>
+          <input type="file" id="file-upload" accept=".txt,.json,.csv" />
+          <button class="btn btn-ghost" id="clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <div class="input-format-row">
+        <span class="label-text">Input format:</span>
+        <label class="radio-pill"><input type="radio" name="input-format" value="auto" checked /> Auto-detect</label>
+        <label class="radio-pill"><input type="radio" name="input-format" value="lines" /> One per line</label>
+        <label class="radio-pill"><input type="radio" name="input-format" value="csv" /> CSV</label>
+        <label class="radio-pill"><input type="radio" name="input-format" value="json" /> JSON array</label>
+      </div>
+
+      <div class="input-search-wrap" id="input-search-wrap">
+        <div class="search-bar search-bar-input">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="input-search-input" placeholder="Search parsed entries…" autocomplete="off" spellcheck="false" />
+          <button type="button" class="search-clear hidden" id="input-search-clear" title="Clear search" aria-label="Clear search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="search-meta hidden" id="input-search-count" aria-live="polite"></div>
+        <div class="filtered-url-view input-filtered-view hidden" id="input-search-filtered" aria-label="Entries matching search"></div>
+      </div>
+
+      <textarea
+        id="url-input"
+        placeholder="Paste your URLs here…&#10;&#10;Supported formats:&#10;  • One URL per line&#10;  • Comma-separated (CSV)&#10;  • JSON array [&quot;url1&quot;, &quot;url2&quot;]&#10;  • Quoted CSV with mixed entries"
+        spellcheck="false"
+      ></textarea>
+    </section>
+
+    <!-- ── OPTIONS ── -->
+    <section class="card" id="options-card">
+      <div class="card-header">
+        <h2>Processing Options</h2>
+        <button class="btn btn-ghost btn-sm" id="reset-options-btn">Reset to defaults</button>
+      </div>
+
+      <div class="options-grid">
+
+        <div class="option-group">
+          <div class="option-group-title">Cleaning</div>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Strip wildcard prefixes
+              <small>*.company.com → company.com</small>
+            </span>
+            <input type="checkbox" id="opt-strip-wildcards" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Strip <code>www.</code> prefix
+              <small>www.company.com → company.com</small>
+            </span>
+            <input type="checkbox" id="opt-strip-www" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Fix broken schemes
+              <small>https:/foo → https://foo</small>
+            </span>
+            <input type="checkbox" id="opt-fix-schemes" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Add <code>https://</code> to bare domains
+              <small>company.com → https://company.com</small>
+            </span>
+            <input type="checkbox" id="opt-add-scheme" checked />
+            <span class="toggle-switch"></span>
+          </label>
+        </div>
+
+        <div class="option-group">
+          <div class="option-group-title">Filtering</div>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Remove duplicates
+              <small>Keep first occurrence only</small>
+            </span>
+            <input type="checkbox" id="opt-dedup" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Filter non-HTTP entries
+              <small>Drop app IDs, tel:, custom schemes</small>
+            </span>
+            <input type="checkbox" id="opt-filter-non-http" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Drop incomplete query strings
+              <small>Entries ending with = or &amp;</small>
+            </span>
+            <input type="checkbox" id="opt-drop-incomplete-query" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Strip trailing paths
+              <small>company.com/page → company.com</small>
+            </span>
+            <input type="checkbox" id="opt-strip-paths" />
+            <span class="toggle-switch"></span>
+          </label>
+        </div>
+
+        <div class="option-group">
+          <div class="option-group-title">Outputs (copy into policy/config)</div>
+          <div class="output-presets">
+            <div class="preset-header-row">
+              <span class="preset-label">Quick preset</span>
+              <p class="preset-header-hint">Applies output list toggles and the <strong>Final List</strong> format. Open the <span class="preset-i-chip" aria-hidden="true" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span> on a card for full notes.</p>
+            </div>
+            <div class="preset-picker" role="group" aria-label="Output format preset">
+              <div class="preset-card" data-preset="edge">
+                <div class="preset-card-top">
+                  <button type="button" class="preset-btn active" data-preset="edge" id="preset-edge">
+                    <span class="preset-btn-title">Edge URL list</span>
+                    <span class="preset-btn-tag">URL List-friendly</span>
+                  </button>
+                  <button type="button" class="preset-info-btn" data-preset-info="edge" aria-label="About Edge URL list preset" aria-expanded="false" aria-controls="preset-detail-edge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  </button>
+                </div>
+                <div class="preset-detail-panel hidden" id="preset-detail-edge" role="region" aria-label="Edge URL list preset details"></div>
+              </div>
+              <div class="preset-card" data-preset="full-https">
+                <div class="preset-card-top">
+                  <button type="button" class="preset-btn" data-preset="full-https" id="preset-full-https">
+                    <span class="preset-btn-title">Full URLs (https://…)</span>
+                    <span class="preset-btn-tag">Every line with https://</span>
+                  </button>
+                  <button type="button" class="preset-info-btn" data-preset-info="full-https" aria-label="About Full URLs preset" aria-expanded="false" aria-controls="preset-detail-full-https">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  </button>
+                </div>
+                <div class="preset-detail-panel hidden" id="preset-detail-full-https" role="region" aria-label="Full URLs preset details"></div>
+              </div>
+              <div class="preset-card" data-preset="domains">
+                <div class="preset-card-top">
+                  <button type="button" class="preset-btn" data-preset="domains" id="preset-domains">
+                    <span class="preset-btn-title">Domains only (no scheme)</span>
+                    <span class="preset-btn-tag">Bare list focus</span>
+                  </button>
+                  <button type="button" class="preset-info-btn" data-preset-info="domains" aria-label="About Domains only preset" aria-expanded="false" aria-controls="preset-detail-domains">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  </button>
+                </div>
+                <div class="preset-detail-panel hidden" id="preset-detail-domains" role="region" aria-label="Domains only preset details"></div>
+              </div>
+            </div>
+            <p class="preset-hint" id="preset-hint">Strip <code>www.</code> · all output tabs on · <strong>Final List</strong> = bare + <code>https://</code> for ports (Edge).</p>
+          </div>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Include "With Scheme" list
+              <small>https://company.com (for Edge policy)</small>
+            </span>
+            <input type="checkbox" id="opt-out-with-scheme" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Include "No Scheme" list
+              <small>company.com (bare domains only)</small>
+            </span>
+            <input type="checkbox" id="opt-out-no-scheme" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Include "Ports Only" list
+              <small>Separate list for port-based URLs</small>
+            </span>
+            <input type="checkbox" id="opt-out-ports" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">
+              Compact JSON (no spaces)
+              <small>["a","b"] vs ["a", "b"]</small>
+            </span>
+            <input type="checkbox" id="opt-compact" checked />
+            <span class="toggle-switch"></span>
+          </label>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── PROCESS BUTTON ── -->
+    <div class="process-row">
+      <button class="btn btn-primary btn-lg" id="process-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Process URLs
+      </button>
+      <span class="process-hint" id="process-hint"></span>
+    </div>
+
+    <!-- ── STATS BAR ── -->
+    <div class="stats-bar hidden" id="stats-bar">
+      <div class="stat">
+        <span class="stat-value" id="stat-total">0</span>
+        <span class="stat-label">Input entries</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value stat-green" id="stat-valid">0</span>
+        <span class="stat-label">Valid URLs</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value stat-blue" id="stat-dedup">0</span>
+        <span class="stat-label">Duplicates removed</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value stat-orange" id="stat-skipped">0</span>
+        <span class="stat-label">Skipped / invalid</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value stat-purple" id="stat-ports">0</span>
+        <span class="stat-label">Port-based URLs</span>
+      </div>
+    </div>
+
+    <!-- ── OUTPUT ── -->
+    <section class="card hidden" id="output-card">
+      <div class="card-header">
+        <h2>Outputs (copy into policy/config)</h2>
+      </div>
+
+      <div class="tabs-scroll" id="output-tabs-scroll">
+      <div class="tabs" id="output-tabs">
+        <button class="tab tab-final active" data-tab="final-list">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg>
+          Final List
+          <span class="tab-badge tab-badge-final" id="badge-final-list">0</span>
+        </button>
+        <button class="tab" data-tab="with-scheme">With Scheme <span class="tab-badge" id="badge-with-scheme">0</span></button>
+        <button class="tab" data-tab="no-scheme">No Scheme <span class="tab-badge" id="badge-no-scheme">0</span></button>
+        <button class="tab" data-tab="ports-only">Ports Only <span class="tab-badge" id="badge-ports-only">0</span></button>
+        <button class="tab" data-tab="skipped-list">Skipped <span class="tab-badge tab-badge-warn" id="badge-skipped">0</span></button>
+      </div>
+      </div>
+
+      <div class="output-search-wrap" id="output-search-wrap">
+        <div class="search-bar output-search-bar">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="output-search-input" placeholder="Filter current tab…" autocomplete="off" spellcheck="false" disabled />
+          <button type="button" class="search-clear hidden" id="output-search-clear" title="Clear filter" aria-label="Clear filter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="search-meta hidden" id="output-search-count" aria-live="polite"></div>
+      </div>
+      <p class="output-search-hint hidden" id="output-search-hint">Run <strong>Process URLs</strong> to enable filtering. Copy / Download always use the full list for the active tab.</p>
+
+      <div class="filtered-url-view hidden" id="output-search-filtered" aria-live="polite"></div>
+
+      <div class="tab-panel active" id="panel-final-list">
+        <div class="output-toolbar">
+          <span class="output-desc" id="final-list-descblock">
+            <strong>Final List.</strong>
+            Shape follows your <strong>Quick preset</strong> (Edge URL list / Full URLs / Domains only). Run <strong>Process URLs</strong> to fill this tab.
+            <span class="final-legend">
+              <span class="legend-dot legend-dot-plain"></span> Bare or standard &nbsp;
+              <span class="legend-dot legend-dot-port"></span> <code>https://</code> + port
+            </span>
+          </span>
+          <div class="output-actions">
+            <button class="btn btn-ghost btn-sm" data-copy="final-list">Copy</button>
+            <button class="btn btn-ghost btn-sm" data-download="final-list">Download .json</button>
+          </div>
+        </div>
+        <textarea class="output-textarea" id="out-final-list" readonly spellcheck="false"></textarea>
+        <div class="final-summary" id="final-summary"></div>
+      </div>
+
+      <div class="tab-panel" id="panel-with-scheme">
+        <div class="output-toolbar">
+          <span class="output-desc">URLs with <code>https://</code> — suitable for Microsoft Edge URL List. Port-based URLs included here.</span>
+          <div class="output-actions">
+            <button class="btn btn-ghost btn-sm" data-copy="with-scheme">Copy</button>
+            <button class="btn btn-ghost btn-sm" data-download="with-scheme">Download .json</button>
+          </div>
+        </div>
+        <textarea class="output-textarea" id="out-with-scheme" readonly spellcheck="false"></textarea>
+      </div>
+
+      <div class="tab-panel" id="panel-no-scheme">
+        <div class="output-toolbar">
+          <span class="output-desc">Bare domain list — no scheme, no <code>www.</code>, no ports. Suitable for Google iframe validators.</span>
+          <div class="output-actions">
+            <button class="btn btn-ghost btn-sm" data-copy="no-scheme">Copy</button>
+            <button class="btn btn-ghost btn-sm" data-download="no-scheme">Download .json</button>
+          </div>
+        </div>
+        <textarea class="output-textarea" id="out-no-scheme" readonly spellcheck="false"></textarea>
+      </div>
+
+      <div class="tab-panel" id="panel-ports-only">
+        <div class="output-toolbar">
+          <span class="output-desc">Only URLs with explicit port numbers — always include <code>https://</code> when using ports in Edge policy.</span>
+          <div class="output-actions">
+            <button class="btn btn-ghost btn-sm" data-copy="ports-only">Copy</button>
+            <button class="btn btn-ghost btn-sm" data-download="ports-only">Download .json</button>
+          </div>
+        </div>
+        <textarea class="output-textarea" id="out-ports-only" readonly spellcheck="false"></textarea>
+      </div>
+
+      <div class="tab-panel" id="panel-skipped-list">
+        <div class="output-toolbar">
+          <span class="output-desc">Entries that were skipped — invalid format, non-HTTP schemes, or app identifiers.</span>
+          <div class="output-actions">
+            <button class="btn btn-ghost btn-sm" data-copy="skipped-list">Copy</button>
+          </div>
+        </div>
+        <textarea class="output-textarea" id="out-skipped-list" readonly spellcheck="false"></textarea>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner" aria-label="Credits">
+      <span class="footer-line footer-icon" aria-hidden="true">⚙️</span>
+      <span class="footer-line">Created &amp; Powered by the Automation Team</span>
+      <span class="footer-line footer-icon" aria-hidden="true">🤖</span>
+      <span class="footer-line">&amp; AI</span>
+    </div>
+  </footer>
+
+  <div class="toast hidden" id="toast">Copied to clipboard!</div>
+
+  <script src="app.js?v=2026-04-09"></script>
+</body>
+</html>
